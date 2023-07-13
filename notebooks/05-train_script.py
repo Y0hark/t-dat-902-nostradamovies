@@ -18,6 +18,20 @@ from PIL import Image
 import sklearn
 from sklearn.model_selection import train_test_split
 from statistics import mean
+import os
+from keras.callbacks import TensorBoard
+import time
+
+# Name the log directory with the current timestamp.
+log_dir = "logs/fit/" + time.strftime("%Y%m%d-%H%M%S")
+
+# Create a TensorBoard callback
+tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+
+TRAIN_CSV = os.path.abspath('csv/Train.csv')
+VALID_CSV = os.path.abspath('csv/Valid.csv')
+TEST_CSV = os.path.abspath('csv/Test.csv')
 
 def arrange_data(df):
     
@@ -43,11 +57,11 @@ def arrange_data(df):
 
 
 print("Processing train..")
-train_df = pd.read_csv("Train.csv", delimiter=" ")
+train_df = pd.read_csv(TRAIN_CSV, delimiter=",")
 X_train, Y_train = arrange_data (train_df)
 
 print("Processing valid..")
-val_df = pd.read_csv("Valid.csv", delimiter=" ")
+val_df = pd.read_csv(VALID_CSV, delimiter=",")
 X_val, Y_val = arrange_data (val_df)
 
 
@@ -84,17 +98,23 @@ model.summary()
               #metrics=['accuracy'])
 
 #model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.compile(optimizer=optimizers.RMSprop(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+# model.compile(optimizer=optimizers.RMSprop(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=keras.optimizers.legacy.RMSprop(learning_rate=1e-4), 
+              loss='binary_crossentropy', 
+              metrics=['accuracy'])
+
 
 # construct the training image generator for data augmentation
 aug = ImageDataGenerator(rotation_range=20, zoom_range=0.15,width_shift_range=0.2, height_shift_range=0.2, 
                          shear_range=0.15,horizontal_flip=True, fill_mode="nearest")
 
 # train the network
-EPOCHS=50
-BS = 64
+EPOCHS=10
+BS = 16
+STEP_SIZE_TRAIN=25
 
-history = model.fit_generator(aug.flow(X_train, Y_train, batch_size=BS),validation_data=(X_val, Y_val), 
-                    steps_per_epoch=len(X_train) // BS, epochs=EPOCHS)
+history = model.fit(aug.flow(X_train, Y_train, batch_size=BS), validation_data=(X_val, Y_val), 
+                    steps_per_epoch=STEP_SIZE_TRAIN, epochs=EPOCHS, callbacks=[tensorboard_callback])
+
 
 model.save('Model_4d.h5')
