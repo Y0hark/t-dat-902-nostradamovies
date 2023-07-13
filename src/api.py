@@ -5,6 +5,7 @@ import numpy as np
 import os
 import io
 from PIL import Image
+from flask_cors import CORS
 
 # Charger votre modèle entraîné
 model = load_model(os.path.abspath('./models/Model_6c.h5'))
@@ -15,6 +16,7 @@ col_names =  ['Action', 'Adult', 'Adventure', 'Animation', 'Biography', 'Comedy'
                   'Sci-Fi', 'Short', 'Sport', 'Talk-Show', 'Thriller', 'War', 'Western']
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/predict", methods=["POST"])
 def predict():
